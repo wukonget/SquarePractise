@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
@@ -20,6 +21,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -36,15 +38,13 @@ import com.wk.squarepratice.vm.DialogViewModel
 
 class MainActivity : ComponentActivity() {
 
-    val dialogVm: DialogViewModel by viewModels()
+    private val dialogVm: DialogViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
             SquarePraticeTheme {
-                // A surface container using the 'background' color from the theme
-                ProvideWindowInsets {
 
                     val systemUiController = rememberSystemUiController()
                     SideEffect {
@@ -53,12 +53,13 @@ class MainActivity : ComponentActivity() {
 
                     Surface(
                         modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colors.background,
+                        color = SquarePraticeTheme.colors.background,
                     ) {
-                        Nav()
+                        MainPage{
+                            this@MainActivity.finish()
+                        }
                     }
 
-                }
             }
         }
         checkUpdate()
@@ -86,88 +87,36 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onBackPressed() {
-        dialogVm.exitEnsureShow.value = true
-        Log.e("peng", "onback::${dialogVm.exitEnsureShow.value}")
+        dialogVm.exitEnsureShow = true
     }
 }
 
 
 @Composable
-fun Nav() {
-    val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = "main") {
-        composable("main") { MainPage(navController) }
-    }
-}
-
-@Composable
-fun MainPage(navController: NavController) {
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
+fun MainPage(finish:()->Unit) {
+    val dialogVm : DialogViewModel = viewModel()
+    Column() {
+        Spacer(
+            modifier = Modifier
+                .fillMaxWidth()
+                .windowInsetsTopHeight(WindowInsets.statusBars)
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .background(SquarePraticeTheme.colors.background)
         ) {
+            PlayArea()
 
-            Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .windowInsetsTopHeight(WindowInsets.statusBars)
-            )
+            PlayRecordList()
 
-            LifeArea()
-
-            LevelSelect()
-
-            Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1.0f)
-            )
-
-
-            TimeSeconds()
-
-            Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(25.dp)
-            )
-
-            SquareGrid(modifier = Modifier.fillMaxWidth(0.9f))
-
-            Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(15.dp)
-                    .weight(1.0f)
-            )
-
-            Text(
-                text = "v ${BuildConfig.VERSION_NAME}",
-                style = TextStyle(fontSize = 12.sp, color = MaterialTheme.colors.onBackground),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(10.dp),
-                textAlign = TextAlign.Center
-            )
-            Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .windowInsetsBottomHeight(WindowInsets.navigationBars)
-            )
+            if(dialogVm.exitEnsureShow){
+                ExitDialog ("确定退出么？",finish){
+                    dialogVm.exitEnsureShow = false
+                }
+            }
         }
-
-        DialogArea(navController)
     }
 
-
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    SquarePraticeTheme {
-        Nav()
-    }
 }

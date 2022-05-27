@@ -1,22 +1,28 @@
 package com.wk.squarepratice.vm
 
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
+import android.util.Log
+import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import com.wk.squarepratice.db.PlayRecord
+import com.wk.squarepratice.db.SingleRoom
+import com.wk.squarepratice.ui.theme.SquarePraticeTheme
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.Flow
+import java.util.*
+import kotlin.coroutines.CoroutineContext
 
 class MainViewModel : ViewModel() {
     private var timerJob: Job? = null
-    val currentLevel = mutableStateOf(2) //等级  n*n
-    val progress = mutableStateOf(1)//当前该点第几个了
-    val dataList = mutableStateOf(listOf("1", "2", "3", "4"))//数据源
-    val costTimeMills = mutableStateOf(0L)//总耗时
-    val state: MutableState<PlayState> = mutableStateOf(PlayState.Prepared)
-    val showSuggestion = mutableStateOf(false)  //显示提示
-    val life = mutableStateOf(currentLevel.value) //生命
+    var currentLevel = mutableStateOf(2) //等级  n*n
+    var progress by mutableStateOf(1)//当前该点第几个了
+    var dataList = mutableStateOf(listOf("1", "2", "3", "4"))//数据源
+    var costTimeMills = mutableStateOf(0L)//总耗时
+    var state: MutableState<PlayState> = mutableStateOf(PlayState.Prepared)
+    var showSuggestion by mutableStateOf(false)  //显示提示
+    var life = mutableStateOf(currentLevel.value) //生命
+    var currentTheme by mutableStateOf(SquarePraticeTheme.Theme.Light)
+    var showScoreList by mutableStateOf(false)
 
     /**
      * 调整难度等级
@@ -36,7 +42,7 @@ class MainViewModel : ViewModel() {
      * 刷新列表
      */
     private fun updateList() {
-        progress.value = 1
+        progress = 1
         life.value = currentLevel.value
         costTimeMills.value = 0L
         dataList.value = getRandomList()
@@ -49,15 +55,12 @@ class MainViewModel : ViewModel() {
         if (state.value != PlayState.Playing) {
             return
         }
-        showSuggestion.value = false
-        if (progress.value.toString() == content) {
-            dataList.value.toMutableList().let {
-                it[it.indexOf(content)] = "OK"
-                dataList.value = it
-            }
-            progress.value++
-            if (progress.value > dataList.value.size) {
+        showSuggestion = false
+        if (progress.toString() == content) {
+            progress++
+            if (progress > dataList.value.size) {
                 state.value = PlayState.Success
+                saveRecord()
                 stopPlay()
             }
         } else {
@@ -66,10 +69,30 @@ class MainViewModel : ViewModel() {
 
     }
 
+
+    /**
+     * 保存一条记录
+     */
+    private fun saveRecord(success:Boolean = true,finish:Boolean = true) {
+        viewModelScope.launch(Dispatchers.IO) {
+            insertRecord(
+                PlayRecord(
+                    timeMills = Date().time,
+                    level = currentLevel.value,
+                    success = success,
+                    finish = finish,
+                    costTime = costTimeMills.value,
+                    costLife = currentLevel.value - life.value
+                )
+            )
+        }
+    }
+
     private fun reduceLife() {
         life.value--
         if (life.value < 1) {
             state.value = PlayState.Fail
+            saveRecord(success = false, finish = false)
             stopPlay()
         }
     }
@@ -104,7 +127,7 @@ class MainViewModel : ViewModel() {
      * 停止计时
      */
     private fun stopPlay() {
-        progress.value = 1
+        progress = 1
         timerJob?.cancel()
     }
 
@@ -112,10 +135,47 @@ class MainViewModel : ViewModel() {
      * 提示要找的数字位置
      */
     fun showTip() {
-        if (state.value == PlayState.Playing && !showSuggestion.value) {
-            showSuggestion.value = true
+        if (state.value == PlayState.Playing && !showSuggestion) {
+            showSuggestion = true
             reduceLife()
         }
+    }
+
+    /**
+     * 切换主题
+     */
+    fun changeTheme() {
+        Log.e("peng","changeTheme")
+        currentTheme = when(currentTheme){
+            SquarePraticeTheme.Theme.Dark -> {
+                SquarePraticeTheme.Theme.NewYear
+            }
+            SquarePraticeTheme.Theme.NewYear -> {
+                SquarePraticeTheme.Theme.Light
+            }
+            SquarePraticeTheme.Theme.Light -> {
+                SquarePraticeTheme.Theme.Dark
+            }
+        }
+    }
+
+    /**
+     * 显示历史成绩列表
+     */
+    fun showScoreList(show:Boolean = true) {
+        showScoreList = show
+    }
+
+
+    /**
+     * 获取所有数据
+     */
+    fun loadAllRecords(): Flow<List<PlayRecord>> {
+        return SingleRoom.playRecordDao.queryAll()
+    }
+
+    fun insertRecord(record: PlayRecord){
+        SingleRoom.playRecordDao.insert(record)
     }
 
 }
