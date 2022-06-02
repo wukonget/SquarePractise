@@ -11,8 +11,8 @@ android {
         applicationId "com.wk.squarepratice"
         minSdk 21
         targetSdk 32
-        versionCode 6
-        versionName "1.0.5"
+        versionCode 10
+        versionName "1.0.9"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -92,5 +92,9 @@ dependencies {
 
     implementation "androidx.navigation:navigation-compose:2.4.2"
 
+    //工具类合集
     implementation 'com.blankj:utilcodex:1.31.0'
+
+    //应用升级
+    implementation 'com.github.azhon:AppUpdate:4.1.0'
 }

@@ -1,15 +1,15 @@
 package com.wk.squarepratice.views
 
 import android.graphics.Paint
-import android.util.Log
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -29,7 +29,6 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -37,12 +36,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.blankj.utilcode.util.ToastUtils
 import com.wk.squarepratice.ui.theme.SquarePraticeTheme
-import com.wk.squarepratice.ui.theme.grey1
-import com.wk.squarepratice.ui.theme.white
 import com.wk.squarepratice.util.leftOne
 import com.wk.squarepratice.vm.MainViewModel
 import com.wk.squarepratice.vm.PlayState
@@ -382,11 +377,19 @@ fun TimeSeconds(vm: MainViewModel = viewModel()) {
 
 @Composable
 fun ExitDialog(title: String = "确定退出么？", sure: () -> Unit, dismiss: () -> Unit) {
-    AlertDialog(onDismissRequest = { dismiss() },
+    AlertDialog(
+        onDismissRequest = { dismiss() },
         backgroundColor = SquarePraticeTheme.colors.background,
         modifier = Modifier.padding(10.dp),
         shape = RoundedCornerShape(10.dp),
-        title = { Text(text = title, fontSize = 18.sp, textAlign = TextAlign.Center) },
+        title = {
+            Text(
+                text = title,
+                fontSize = 18.sp,
+                textAlign = TextAlign.Center,
+                color = SquarePraticeTheme.colors.onBackground
+            )
+        },
         text = {},
         confirmButton = {
             Row(
@@ -398,6 +401,7 @@ fun ExitDialog(title: String = "确定退出么？", sure: () -> Unit, dismiss: 
                 Text(
                     text = "取消",
                     fontSize = 18.sp,
+                    color = SquarePraticeTheme.colors.onBackground,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .background(SquarePraticeTheme.colors.background)
@@ -408,11 +412,13 @@ fun ExitDialog(title: String = "确定退出么？", sure: () -> Unit, dismiss: 
                     modifier = Modifier
                         .width(1.dp)
                         .fillMaxHeight()
+                        .background(SquarePraticeTheme.colors.onBackground)
                 )
                 Text(
                     text = "确定",
                     fontSize = 18.sp,
                     textAlign = TextAlign.Center,
+                    color = SquarePraticeTheme.colors.actionColor,
                     modifier = Modifier
                         .background(SquarePraticeTheme.colors.background)
                         .weight(1f)

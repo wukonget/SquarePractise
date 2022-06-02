@@ -2,7 +2,6 @@ package com.wk.squarepratice.views
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideIn
 import androidx.compose.animation.slideOut
 import androidx.compose.foundation.background
@@ -17,8 +16,6 @@ import androidx.compose.material.IconButton
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.twotone.Favorite
@@ -26,7 +23,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
@@ -36,11 +32,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.blankj.utilcode.constant.TimeConstants
 import com.blankj.utilcode.util.TimeUtils
 import com.wk.squarepratice.ui.theme.SquarePraticeTheme
 import com.wk.squarepratice.ui.theme.grey1
-import com.wk.squarepratice.ui.theme.red1
 import com.wk.squarepratice.ui.theme.yellow1
 import com.wk.squarepratice.util.leftOne
 import com.wk.squarepratice.vm.MainViewModel
@@ -49,17 +43,17 @@ import com.wk.squarepratice.vm.MainViewModel
 fun PlayRecordList(vm: MainViewModel = viewModel()) {
     val data = vm.loadAllRecords().collectAsState(initial = listOf()).value
 
-        AnimatedVisibility(
-            visible = vm.showScoreList,
-            enter = slideIn(
-                animationSpec = tween(durationMillis = 500, delayMillis = 0),
-                initialOffset = {fullSize -> IntOffset(fullSize.width,0) }
-            ),
-            exit = slideOut(
-                animationSpec = tween(durationMillis = 500, delayMillis = 0),
-                targetOffset = {fullSize -> IntOffset(fullSize.width,0) }
-            )
-        ) {
+    AnimatedVisibility(
+        visible = vm.showScoreList,
+        enter = slideIn(
+            animationSpec = tween(durationMillis = 200, delayMillis = 0),
+            initialOffset = { fullSize -> IntOffset(fullSize.width, 0) }
+        ),
+        exit = slideOut(
+            animationSpec = tween(durationMillis = 200, delayMillis = 0),
+            targetOffset = { fullSize -> IntOffset(fullSize.width, 0) }
+        )
+    ) {
 
         Column(
             modifier = Modifier
@@ -75,7 +69,11 @@ fun PlayRecordList(vm: MainViewModel = viewModel()) {
                 IconButton(onClick = {
                     vm.showScoreList(false)
                 }) {
-                    Icon(Icons.Filled.ArrowBack, contentDescription = "返回")
+                    Icon(
+                        Icons.Filled.ArrowBack,
+                        contentDescription = "返回",
+                        tint = SquarePraticeTheme.colors.onBackground
+                    )
                 }
 
                 Text(
@@ -113,13 +111,21 @@ fun PlayRecordList(vm: MainViewModel = viewModel()) {
                                     .padding(16.dp)
                             ) {
 
-                                IconAndText(Icons.Outlined.Star, yellow1, "${item.level}")
+                                IconAndText(
+                                    Icons.Outlined.Star,
+                                    yellow1,
+                                    "${item.level}"
+                                )
                                 IconAndText(
                                     Icons.Outlined.Timer,
                                     grey1,
-                                    "${(item.costTime/1000f).leftOne()} s"
+                                    "${(item.costTime / 1000f).leftOne()} s"
                                 )
-                                IconAndText(Icons.TwoTone.Favorite,red1, "${item.costLife}")
+                                IconAndText(
+                                    Icons.TwoTone.Favorite,
+                                    grey1,
+                                    "${item.costLife}"
+                                )
                                 Spacer(modifier = Modifier.weight(1f))
                                 Text(
                                     text = TimeUtils.millis2String(item.timeMills),
@@ -142,7 +148,7 @@ private fun IconAndText(ic: ImageVector, tintColor: Color, text: String) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(end = 10.dp)) {
         Icon(ic, contentDescription = "难度$text", tint = tintColor, modifier = Modifier.size(15.dp))
         Text(
-            text = ": $text",
+            text = " $text  ",
             style = TextStyle(
                 fontSize = 15.sp,
                 color = SquarePraticeTheme.colors.textOnItem,
