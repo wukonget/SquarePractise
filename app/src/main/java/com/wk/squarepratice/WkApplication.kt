@@ -7,6 +7,14 @@ import com.pgyer.pgyersdk.PgyerSDKManager
 import com.wk.squarepratice.util.TAG
 
 class WkApplication : Application() {
+    companion object {
+        var instance: WkApplication? = null
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        instance = this
+    }
 
     override fun attachBaseContext(base: Context?) {
         super.attachBaseContext(base)

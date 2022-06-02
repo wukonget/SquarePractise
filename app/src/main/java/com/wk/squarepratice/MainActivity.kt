@@ -1,50 +1,42 @@
 package com.wk.squarepratice
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
-import androidx.navigation.NavController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.azhon.appupdate.manager.DownloadManager
+import com.blankj.utilcode.util.AppUtils
 import com.blankj.utilcode.util.ToastUtils
-import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.pgyer.pgyersdk.PgyerSDKManager
 import com.pgyer.pgyersdk.callback.CheckoutVersionCallBack
 import com.pgyer.pgyersdk.model.CheckSoftModel
 import com.wk.squarepratice.ui.theme.SquarePraticeTheme
-import com.wk.squarepratice.views.*
+import com.wk.squarepratice.views.ExitDialog
+import com.wk.squarepratice.views.PlayArea
+import com.wk.squarepratice.views.PlayRecordList
 import com.wk.squarepratice.vm.DialogViewModel
+import com.wk.squarepratice.vm.MainViewModel
 
 class MainActivity : ComponentActivity() {
 
-    val dialogVm: DialogViewModel by viewModels()
+    private val dialogVm: DialogViewModel by viewModels()
+    private val mainVm: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
             SquarePraticeTheme {
-                // A surface container using the 'background' color from the theme
-                ProvideWindowInsets {
 
                     val systemUiController = rememberSystemUiController()
                     SideEffect {
@@ -53,12 +45,13 @@ class MainActivity : ComponentActivity() {
 
                     Surface(
                         modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colors.background,
+                        color = SquarePraticeTheme.colors.background,
                     ) {
-                        Nav()
+                        MainPage{
+                            this@MainActivity.finish()
+                        }
                     }
 
-                }
             }
         }
         checkUpdate()
@@ -70,8 +63,8 @@ class MainActivity : ComponentActivity() {
             override fun onSuccess(p0: CheckSoftModel?) {
                 p0?.let {
                     if (it.isBuildHaveNewVersion) {
-                        ToastUtils.showShort("有新版本${it.buildVersion},${it.buildUpdateDescription}")
-
+//                        ToastUtils.showShort("有新版本${it.buildVersion},${it.buildUpdateDescription}")
+                        downloadApk(p0)
                     } else {
                         ToastUtils.showShort("已经是最新版了")
                     }
@@ -85,89 +78,58 @@ class MainActivity : ComponentActivity() {
         })
     }
 
-    override fun onBackPressed() {
-        dialogVm.exitEnsureShow.value = true
-        Log.e("peng", "onback::${dialogVm.exitEnsureShow.value}")
-    }
-}
-
-
-@Composable
-fun Nav() {
-    val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = "main") {
-        composable("main") { MainPage(navController) }
-    }
-}
-
-@Composable
-fun MainPage(navController: NavController) {
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-
-            Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .windowInsetsTopHeight(WindowInsets.statusBars)
-            )
-
-            LifeArea()
-
-            LevelSelect()
-
-            Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1.0f)
-            )
-
-
-            TimeSeconds()
-
-            Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(25.dp)
-            )
-
-            SquareGrid(modifier = Modifier.fillMaxWidth(0.9f))
-
-            Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(15.dp)
-                    .weight(1.0f)
-            )
-
-            Text(
-                text = "v ${BuildConfig.VERSION_NAME}",
-                style = TextStyle(fontSize = 12.sp, color = MaterialTheme.colors.onBackground),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(10.dp),
-                textAlign = TextAlign.Center
-            )
-            Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .windowInsetsBottomHeight(WindowInsets.navigationBars)
-            )
+    private fun downloadApk(info: CheckSoftModel) {
+        val manager = DownloadManager.Builder(this).run {
+            apkUrl(info.downloadURL)
+            apkName("update-${info.buildVersion}.apk")
+            smallIcon(R.drawable.ic_launcher_foreground)
+//            //设置了此参数，那么内部会自动判断是否需要显示更新对话框，否则需要自己判断是否需要更新
+            apkVersionCode(AppUtils.getAppVersionCode() + 1)
+            //同时下面三个参数也必须要设置
+            apkVersionName(info.buildVersion)
+            apkSize("")
+            apkDescription(info.buildUpdateDescription)
+            //省略一些非必须参数...
+            build()
         }
-
-        DialogArea(navController)
+        manager.download()
     }
 
-
+    override fun onBackPressed() {
+        if (mainVm.showScoreList) {
+            mainVm.showScoreList(false)
+        } else {
+            dialogVm.exitEnsureShow = true
+        }
+    }
 }
 
-@Preview(showBackground = true)
+
 @Composable
-fun DefaultPreview() {
-    SquarePraticeTheme {
-        Nav()
+fun MainPage(finish:()->Unit) {
+    val dialogVm : DialogViewModel = viewModel()
+    Column() {
+        Spacer(
+            modifier = Modifier
+                .fillMaxWidth()
+                .windowInsetsTopHeight(WindowInsets.statusBars)
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .background(SquarePraticeTheme.colors.background)
+        ) {
+            PlayArea()
+
+            PlayRecordList()
+
+            if(dialogVm.exitEnsureShow){
+                ExitDialog ("确定退出么？",finish){
+                    dialogVm.exitEnsureShow = false
+                }
+            }
+        }
     }
+
 }

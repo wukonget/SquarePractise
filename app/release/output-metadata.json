@@ -11,9 +11,9 @@
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 5,
-      "versionName": "1.0.4",
-      "outputFile": "squarepratice-v5-20220507083229-release.apk"
+      "versionCode": 10,
+      "versionName": "1.0.9",
+      "outputFile": "squarepratice-v10-20220602064424-release.apk"
     }
   ],
   "elementType": "File"

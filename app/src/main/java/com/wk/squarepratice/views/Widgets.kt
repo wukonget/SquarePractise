@@ -1,17 +1,17 @@
 package com.wk.squarepratice.views
 
+import android.graphics.Paint
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.scaleIn
+import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -20,23 +20,33 @@ import androidx.compose.material.icons.twotone.Favorite
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.wk.squarepratice.ui.theme.SquarePraticeTheme
 import com.wk.squarepratice.util.leftOne
 import com.wk.squarepratice.vm.MainViewModel
 import com.wk.squarepratice.vm.PlayState
+import kotlin.math.floor
 
 @Preview(showSystemUi = true)
 @Composable
 fun Pre() {
-    SquareGrid(modifier = Modifier)
+    SquareGrid(modifier = Modifier.fillMaxWidth(0.9f))
 }
 
 @OptIn(
@@ -47,20 +57,21 @@ fun Pre() {
 fun SquareGrid(modifier: Modifier, vm: MainViewModel = viewModel()) {
     val rows = vm.currentLevel.value
     val data = vm.dataList.value
-    BoxWithConstraints(contentAlignment = Alignment.Center) {
-        LazyVerticalGrid(columns = GridCells.Fixed(rows), modifier = modifier) {
-            items(data.size) { index ->
-                SquareItem(
-                    modifier = Modifier.fillMaxSize(),
-                    content = if (vm.state.value == PlayState.Playing) data[index] else ""
-                )
-            }
+    BoxWithConstraints(contentAlignment = Alignment.Center, modifier = modifier.aspectRatio(1.0f)) {
+
+        NumGrid(
+            columns = rows,
+            data = data,
+            modifier = Modifier.fillMaxSize(),
+            maxWidth = maxWidth,
+            maxHeight = maxHeight
+        ) {
+            vm.select(it)
         }
 
         AnimatedVisibility(
             visible = vm.state.value != PlayState.Playing,
-            enter = expandIn(
-                expandFrom = Alignment.Center,
+            enter = scaleIn(
                 animationSpec = tween(durationMillis = 500, delayMillis = 0)
             ),
             exit = fadeOut(animationSpec = tween(durationMillis = 500, delayMillis = 0))
@@ -73,9 +84,9 @@ fun SquareGrid(modifier: Modifier, vm: MainViewModel = viewModel()) {
                 shape = CircleShape,
                 onClick = { vm.startPlay() },
                 color = when (vm.state.value) {
-                    PlayState.Fail -> Color.Red
-                    PlayState.Success -> MaterialTheme.colors.primary
-                    else -> MaterialTheme.colors.secondary
+                    PlayState.Fail -> SquarePraticeTheme.colors.error
+                    PlayState.Success -> SquarePraticeTheme.colors.success
+                    else -> SquarePraticeTheme.colors.normal
                 }
             ) {
                 BoxWithConstraints(contentAlignment = Alignment.Center) {
@@ -86,7 +97,7 @@ fun SquareGrid(modifier: Modifier, vm: MainViewModel = viewModel()) {
                             else -> "开始"
                         },
                         style = TextStyle(
-                            color = MaterialTheme.colors.onPrimary,
+                            color = SquarePraticeTheme.colors.onActionColor,
                             fontSize = 30.sp,
                             fontWeight = FontWeight.ExtraBold
                         )
@@ -97,31 +108,103 @@ fun SquareGrid(modifier: Modifier, vm: MainViewModel = viewModel()) {
         }
 
     }
+}
 
-
+@Composable
+fun NumGrid(
+    columns: Int,
+    data: List<String>,
+    modifier: Modifier,
+    maxWidth: Dp,
+    maxHeight: Dp,
+    vm: MainViewModel = viewModel(),
+    click: (String) -> Unit
+) {
+    val lineColor = SquarePraticeTheme.colors.onBackground
+    val successColor = SquarePraticeTheme.colors.success
+    val normalColor = SquarePraticeTheme.colors.normal
+    val clickModifier = modifier.pointerInput(data) {
+        detectTapGestures {
+            val clickColumn = floor((it.x) / (maxWidth.toPx() / columns)).toInt()
+            val clickRow = floor((it.y) / (maxHeight.toPx() / columns)).toInt()
+            click(data[clickRow * columns + clickColumn])
+        }
+    }
+    Canvas(modifier = clickModifier) {
+        var lineY: Float
+        var lineX: Float
+        var itemLeft: Float
+        var itemTop: Float
+        var itemText: String
+        val eachSize = (maxHeight.toPx()) / columns //每个item的宽高
+        val nativePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = lineColor.toArgb()
+            textSize = (maxWidth.toPx()) / (columns * 1.5f)
+        }
+        (0..columns).forEach { column ->
+            lineY = eachSize * column
+            lineX = eachSize * column
+            drawLine(
+                lineColor,
+                Offset(0f, lineY),
+                Offset(maxWidth.toPx(), lineY),
+                strokeWidth = 2.dp.toPx()
+            )
+            drawLine(
+                lineColor,
+                Offset(lineX, 0f),
+                Offset(lineX, maxHeight.toPx()),
+                strokeWidth = 2.dp.toPx()
+            )
+            if (vm.state.value == PlayState.Playing && column < columns) {
+                (0 until columns).forEach { row ->
+                    itemText = data[row * columns + column]
+                    itemLeft = column * eachSize
+                    itemTop = row * eachSize
+                    if (vm.showSuggestion && itemText == vm.progress.toString()) {
+                        //如果需要提示的话
+                        drawRect(
+                            successColor,
+                            Offset(itemLeft + 1, itemTop + 1),
+                            Size(eachSize - 2, eachSize - 2)
+                        )
+                    }
+                    if (itemText.toInt() < vm.progress) {
+                        //已经点击正确的
+                        drawRect(
+                            normalColor,
+                            Offset(itemLeft + 1, itemTop + 1),
+                            Size(eachSize - 2, eachSize - 2)
+                        )
+                    } else {
+                        //没有到的
+                        drawTextFromLeftTop(itemText, itemLeft, itemTop, eachSize, nativePaint)
+                    }
+                }
+            }
+        }
+    }
 }
 
 
-@OptIn(ExperimentalMaterialApi::class)
-@Composable
-fun SquareItem(modifier: Modifier, content: String, vm: MainViewModel = viewModel()) {
-    Card(
-        modifier = modifier
-            .aspectRatio(1.0f)
-            .padding(1.dp),
-        backgroundColor = if (vm.showSuggestion.value && content == vm.progress.value.toString()) Color.Cyan else MaterialTheme.colors.onBackground,
-        elevation = 5.dp,
-        onClick = { vm.select(content) }) {
-        BoxWithConstraints(contentAlignment = Alignment.Center) {
-            Text(
-                content,
-                style = TextStyle(
-                    fontSize = (maxHeight.value / (if (content == "OK") 3.0 else 1.5)).sp,
-                    color = if (content == "OK") MaterialTheme.colors.primary else MaterialTheme.colors.background
-                ),
-                textAlign = TextAlign.Center
-            )
+private fun DrawScope.drawTextFromLeftTop(
+    text: String,
+    left: Float,
+    top: Float,
+    size: Float,
+    nativePaint: Paint
+) {
+    drawIntoCanvas { canvas ->
+        val centerToBaseLine: Float = nativePaint.fontMetrics.let { fm ->
+            (fm.top + fm.bottom) / 2
         }
+        val textWidth = nativePaint.measureText(text)
+        canvas.nativeCanvas.drawText(
+            text,
+            left + (size - textWidth) / 2,
+            top + size / 2 - centerToBaseLine,
+            nativePaint
+        )
     }
 }
 
@@ -138,17 +221,40 @@ fun LifeArea(vm: MainViewModel = viewModel()) {
             style = TextStyle(
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colors.onBackground
+                color = SquarePraticeTheme.colors.onBackground
             )
         )
-        repeat(vm.life.value) {
-            Icon(
-                Icons.TwoTone.Favorite,
-                contentDescription = "life",
-                tint = Color.Red,
-                modifier = Modifier.padding(horizontal = 2.dp)
+        Icon(
+            Icons.TwoTone.Favorite,
+            contentDescription = "life",
+            tint = Color.Red,
+            modifier = Modifier.padding(horizontal = 2.dp)
+        )
+
+        Text(
+            text = " x ${vm.life.value}", style = TextStyle(
+                fontSize = 18.sp,
+                color = SquarePraticeTheme.colors.actionColor
+            )
+        )
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        OutlinedButton(
+            onClick = {vm.showScoreList()},
+            shape = RoundedCornerShape(10.dp),
+            border = BorderStroke(1.dp, SquarePraticeTheme.colors.actionColor),
+            colors = ButtonDefaults.outlinedButtonColors(backgroundColor = SquarePraticeTheme.colors.background)
+        ) {
+            Text(
+                text = "历史情况", style = TextStyle(
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SquarePraticeTheme.colors.actionColor
+                )
             )
         }
+
     }
 }
 
@@ -165,7 +271,7 @@ fun LevelSelect(vm: MainViewModel = viewModel()) {
             modifier = Modifier.padding(end = 10.dp),
             text = "难度",
             style = TextStyle(
-                color = MaterialTheme.colors.secondary, fontSize = 24.sp
+                color = SquarePraticeTheme.colors.actionColor, fontSize = 24.sp
             )
         )
 
@@ -176,13 +282,13 @@ fun LevelSelect(vm: MainViewModel = viewModel()) {
                 .clickable {
                     vm.changeLevel(vm.currentLevel.value - 1)
                 },
-            backgroundColor = Color.White
+            backgroundColor = SquarePraticeTheme.colors.actionSecondColor
         ) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Icon(
                     Icons.Filled.Remove,
                     contentDescription = "remove",
-                    tint = Color.Black,
+                    tint = SquarePraticeTheme.colors.onActionSecondColor,
                     modifier = Modifier.fillMaxSize(0.8f)
                 )
             }
@@ -192,7 +298,7 @@ fun LevelSelect(vm: MainViewModel = viewModel()) {
             modifier = Modifier.padding(horizontal = 8.dp),
             text = "${vm.currentLevel.value}",
             style = TextStyle(
-                color = MaterialTheme.colors.onBackground,
+                color = SquarePraticeTheme.colors.onBackground,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -205,13 +311,13 @@ fun LevelSelect(vm: MainViewModel = viewModel()) {
                 .clickable {
                     vm.changeLevel(vm.currentLevel.value + 1)
                 },
-            backgroundColor = MaterialTheme.colors.secondary
+            backgroundColor = SquarePraticeTheme.colors.actionColor
         ) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Icon(
                     Icons.Filled.Add,
                     contentDescription = "add",
-                    tint = MaterialTheme.colors.onSecondary,
+                    tint = SquarePraticeTheme.colors.onActionColor,
                     modifier = Modifier.fillMaxSize(0.8f)
                 )
             }
@@ -222,7 +328,7 @@ fun LevelSelect(vm: MainViewModel = viewModel()) {
         Text(
             text = "进度  ",
             textAlign = TextAlign.Center,
-            style = TextStyle(color = MaterialTheme.colors.secondary, fontSize = 24.sp)
+            style = TextStyle(color = SquarePraticeTheme.colors.actionColor, fontSize = 24.sp)
         )
 
         Card(
@@ -230,7 +336,7 @@ fun LevelSelect(vm: MainViewModel = viewModel()) {
                 .width(35.dp)
                 .height(35.dp),
             shape = CircleShape,
-            backgroundColor = MaterialTheme.colors.secondary
+            backgroundColor = SquarePraticeTheme.colors.actionColor
         ) {
             Box(
                 modifier = Modifier
@@ -241,9 +347,12 @@ fun LevelSelect(vm: MainViewModel = viewModel()) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "${vm.progress.value}",
+                    text = "${vm.progress}",
                     textAlign = TextAlign.Center,
-                    style = TextStyle(color = MaterialTheme.colors.onSecondary, fontSize = 25.sp)
+                    style = TextStyle(
+                        color = SquarePraticeTheme.colors.onActionColor,
+                        fontSize = 25.sp
+                    )
                 )
             }
         }
@@ -261,7 +370,61 @@ fun TimeSeconds(vm: MainViewModel = viewModel()) {
         text = "${(vm.costTimeMills.value.toFloat() / 1000).leftOne()} s",
         style = TextStyle(
             fontSize = fs.value.sp,
-            color = if (vm.state.value == PlayState.Success) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground
+            color = if (vm.state.value == PlayState.Success) SquarePraticeTheme.colors.success else SquarePraticeTheme.colors.onBackground
         )
+    )
+}
+
+@Composable
+fun ExitDialog(title: String = "确定退出么？", sure: () -> Unit, dismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = { dismiss() },
+        backgroundColor = SquarePraticeTheme.colors.background,
+        modifier = Modifier.padding(10.dp),
+        shape = RoundedCornerShape(10.dp),
+        title = {
+            Text(
+                text = title,
+                fontSize = 18.sp,
+                textAlign = TextAlign.Center,
+                color = SquarePraticeTheme.colors.onBackground
+            )
+        },
+        text = {},
+        confirmButton = {
+            Row(
+                modifier = Modifier
+                    .background(SquarePraticeTheme.colors.onBackground)
+                    .fillMaxWidth()
+                    .padding(top = 1.dp)
+            ) {
+                Text(
+                    text = "取消",
+                    fontSize = 18.sp,
+                    color = SquarePraticeTheme.colors.onBackground,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .background(SquarePraticeTheme.colors.background)
+                        .weight(1f)
+                        .padding(vertical = 15.dp)
+                        .clickable { dismiss() })
+                Spacer(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .fillMaxHeight()
+                        .background(SquarePraticeTheme.colors.onBackground)
+                )
+                Text(
+                    text = "确定",
+                    fontSize = 18.sp,
+                    textAlign = TextAlign.Center,
+                    color = SquarePraticeTheme.colors.actionColor,
+                    modifier = Modifier
+                        .background(SquarePraticeTheme.colors.background)
+                        .weight(1f)
+                        .padding(vertical = 15.dp)
+                        .clickable { sure() })
+            }
+        }
     )
 }
