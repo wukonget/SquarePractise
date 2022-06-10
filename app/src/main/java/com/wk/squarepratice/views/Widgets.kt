@@ -1,12 +1,11 @@
+@file:OptIn(ExperimentalAnimationApi::class)
+
 package com.wk.squarepratice.views
 
 import android.graphics.Paint
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.*
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -32,10 +31,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.min
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.wk.squarepratice.ui.theme.SquarePraticeTheme
 import com.wk.squarepratice.util.leftOne
@@ -294,15 +290,20 @@ fun LevelSelect(vm: MainViewModel = viewModel()) {
             }
         }
 
-        Text(
-            modifier = Modifier.padding(horizontal = 8.dp),
-            text = "${vm.currentLevel.value}",
-            style = TextStyle(
-                color = SquarePraticeTheme.colors.onBackground,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
+        AnimatedContent(
+            targetState = vm.currentLevel.value,
+            transitionSpec = { slideInVertically{fullHeight -> fullHeight } with slideOutVertically { fullHeight -> -fullHeight }}
+        ) {target->
+            Text(
+                modifier = Modifier.padding(horizontal = 8.dp),
+                text = "$target",
+                style = TextStyle(
+                    color = SquarePraticeTheme.colors.onBackground,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                )
             )
-        )
+        }
 
         Card(
             modifier = Modifier
@@ -326,7 +327,7 @@ fun LevelSelect(vm: MainViewModel = viewModel()) {
         Spacer(modifier = Modifier.weight(1f))
 
         Text(
-            text = "进度  ",
+            text = "提醒  ",
             textAlign = TextAlign.Center,
             style = TextStyle(color = SquarePraticeTheme.colors.actionColor, fontSize = 24.sp)
         )
