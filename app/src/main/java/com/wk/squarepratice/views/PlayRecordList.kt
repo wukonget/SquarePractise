@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.blankj.utilcode.util.TimeUtils
+import com.wk.squarepratice.db.PlayRecord
 import com.wk.squarepratice.ui.theme.SquarePraticeTheme
 import com.wk.squarepratice.ui.theme.grey1
 import com.wk.squarepratice.ui.theme.yellow1
@@ -87,60 +88,105 @@ fun PlayRecordList(vm: MainViewModel = viewModel()) {
                 )
             }
 
-            LazyColumn(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                contentPadding = PaddingValues(vertical = 10.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                content = {
-                    items(data, key = { it.id ?: 0 }) { item ->
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth(0.95f)
-                                .padding(vertical = 5.dp)
-                                .clickable {
+                contentAlignment = Alignment.TopCenter
+            ) {
+                RecordList(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 40.dp), data
+                )
 
-                                },
-                            shape = RoundedCornerShape(10.dp),
-                            backgroundColor = if (item.success) SquarePraticeTheme.colors.success else SquarePraticeTheme.colors.error
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(16.dp)
-                            ) {
-
-                                IconAndText(
-                                    Icons.Outlined.Star,
-                                    yellow1,
-                                    "${item.level}"
-                                )
-                                IconAndText(
-                                    Icons.Outlined.Timer,
-                                    grey1,
-                                    "${(item.costTime / 1000f).leftOne()} s"
-                                )
-                                IconAndText(
-                                    Icons.TwoTone.Favorite,
-                                    grey1,
-                                    "${item.costLife}"
-                                )
-                                Spacer(modifier = Modifier.weight(1f))
-                                Text(
-                                    text = TimeUtils.millis2String(item.timeMills),
-                                    style = TextStyle(
-                                        fontSize = 13.sp,
-                                        color = SquarePraticeTheme.colors.textOnItem
-                                    )
-                                )
-                            }
+                Row(modifier = Modifier.fillMaxWidth(0.95f)) {
+                    DropDownSelect(
+                        modifier = Modifier.weight(1f),
+                        stringData = (0..9).map { if (it == 0) "全部" else it.toString() },
+                        onButton = "${if (vm.levelDropDown == 0) "全部难度" else "难度${vm.levelDropDown}"}",
+                        showDropDown = vm.showLevelDropDown,
+                        onClickButton = {
+                            vm.showLevelDropDown = !vm.showLevelDropDown
+                        },
+                        onSelect = {
+                            vm.levelDropDown = it
+                            vm.showLevelDropDown = false
                         }
-                    }
-                })
+                    )
+                    Spacer(modifier = Modifier.weight(0.1f))
+                    DropDownSelect(
+                        modifier = Modifier.weight(1f),
+                        stringData = listOf("全部", "成功", "失败"),
+                        onButton = vm.resultDropMap[vm.resultDropDown] ?: "全部结果",
+                        showDropDown = vm.showResultDropDown,
+                        onClickButton = {
+                            vm.showResultDropDown = !vm.showResultDropDown
+                        },
+                        onSelect = {
+                            vm.resultDropDown = it
+                            vm.showResultDropDown = false
+                        }
+                    )
+                }
+
+            }
         }
 
     }
+}
+
+@Composable
+private fun RecordList(modifier: Modifier, data: List<PlayRecord>) {
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = PaddingValues(vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        content = {
+            items(data, key = { it.id ?: 0 }) { item ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth(0.95f)
+                        .padding(vertical = 5.dp)
+                        .clickable {
+
+                        },
+                    shape = RoundedCornerShape(10.dp),
+                    backgroundColor = if (item.success) SquarePraticeTheme.colors.success else SquarePraticeTheme.colors.error
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp)
+                    ) {
+
+                        IconAndText(
+                            Icons.Outlined.Star,
+                            yellow1,
+                            "${item.level}"
+                        )
+                        IconAndText(
+                            Icons.Outlined.Timer,
+                            grey1,
+                            "${(item.costTime / 1000f).leftOne()} s"
+                        )
+                        IconAndText(
+                            Icons.TwoTone.Favorite,
+                            grey1,
+                            "${item.costLife}"
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(
+                            text = TimeUtils.millis2String(item.timeMills),
+                            style = TextStyle(
+                                fontSize = 13.sp,
+                                color = SquarePraticeTheme.colors.textOnItem
+                            )
+                        )
+                    }
+                }
+            }
+        })
 }
 
 @Composable

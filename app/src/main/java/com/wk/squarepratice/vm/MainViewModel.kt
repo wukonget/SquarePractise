@@ -1,19 +1,25 @@
 package com.wk.squarepratice.vm
 
 import android.util.Log
-import androidx.compose.runtime.*
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wk.squarepratice.db.PlayRecord
 import com.wk.squarepratice.db.SingleRoom
 import com.wk.squarepratice.ui.theme.SquarePraticeTheme
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 import java.util.*
-import kotlin.coroutines.CoroutineContext
 
 class MainViewModel : ViewModel() {
     private var timerJob: Job? = null
+    var levelDir: Int by mutableStateOf(1) //难度是增加还是减少，1增加  0减少
     var currentLevel = mutableStateOf(2) //等级  n*n
     var progress by mutableStateOf(1)//当前该点第几个了
     var dataList = mutableStateOf(listOf("1", "2", "3", "4"))//数据源
@@ -23,6 +29,15 @@ class MainViewModel : ViewModel() {
     var life = mutableStateOf(currentLevel.value) //生命
     var currentTheme by mutableStateOf(SquarePraticeTheme.Theme.Light)
     var showScoreList by mutableStateOf(false)
+    var showLevelDropDown: Boolean by mutableStateOf(false)
+    var levelDropDown: Int by mutableStateOf(0)
+    var showResultDropDown: Boolean by mutableStateOf(false)
+    var resultDropDown: Int by mutableStateOf(0) //0全部 ，1成功的，2失败的
+    val resultDropMap: Map<Int, String> = mapOf(
+        0 to "全部结果",
+        1 to "成功",
+        2 to "失败"
+    )
 
     /**
      * 调整难度等级
@@ -31,6 +46,7 @@ class MainViewModel : ViewModel() {
         if (level in (1..9) && level != currentLevel.value) {
             stopPlay()
             state.value = PlayState.Prepared
+            levelDir = if (level > currentLevel.value) 1 else 0
             currentLevel.value = level
             costTimeMills.value = 0
             dataList.value = getRandomList(level)
@@ -171,7 +187,20 @@ class MainViewModel : ViewModel() {
      * 获取所有数据
      */
     fun loadAllRecords(): Flow<List<PlayRecord>> {
-        return SingleRoom.playRecordDao.queryAll()
+        return when {
+            levelDropDown != 0 && resultDropDown != 0 -> SingleRoom.playRecordDao.queryByLevelAndResult(
+                levelDropDown,
+                resultDropDown == 1
+            )
+            levelDropDown != 0 && resultDropDown == 0 -> SingleRoom.playRecordDao.queryByLevel(
+                levelDropDown
+            )
+            levelDropDown == 0 && resultDropDown != 0 -> SingleRoom.playRecordDao.queryByResult(
+                resultDropDown == 1
+            )
+            else -> SingleRoom.playRecordDao.queryAll()
+        }
+
     }
 
     fun insertRecord(record: PlayRecord){

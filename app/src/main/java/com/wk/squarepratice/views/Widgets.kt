@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
@@ -31,7 +32,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.*
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.wk.squarepratice.ui.theme.SquarePraticeTheme
 import com.wk.squarepratice.util.leftOne
@@ -292,7 +296,7 @@ fun LevelSelect(vm: MainViewModel = viewModel()) {
 
         AnimatedContent(
             targetState = vm.currentLevel.value,
-            transitionSpec = { slideInVertically{fullHeight -> fullHeight } with slideOutVertically { fullHeight -> -fullHeight }}
+            transitionSpec = { slideInVertically { fullHeight -> if (vm.levelDir == 1) fullHeight else -fullHeight } with slideOutVertically { fullHeight -> if (vm.levelDir == 1) -fullHeight else fullHeight } }
         ) {target->
             Text(
                 modifier = Modifier.padding(horizontal = 8.dp),
@@ -428,4 +432,46 @@ fun ExitDialog(title: String = "确定退出么？", sure: () -> Unit, dismiss: 
             }
         }
     )
+}
+
+@Composable
+fun DropDownSelect(
+    modifier: Modifier,
+    stringData: List<String>,
+    onButton: String,
+    showDropDown: Boolean,
+    onClickButton: () -> Unit,
+    onSelect: (position: Int) -> Unit
+) {
+    Column(modifier = modifier) {
+        Button(
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(backgroundColor = SquarePraticeTheme.colors.actionColor),
+            onClick = onClickButton
+        ) {
+            Text(
+                text = onButton,
+                color = SquarePraticeTheme.colors.onActionColor,
+                style = TextStyle(fontSize = 16.sp)
+            )
+        }
+        AnimatedVisibility(
+            visible = showDropDown,
+            enter = scaleIn(transformOrigin = TransformOrigin(0.5f, 0f))
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                stringData.forEachIndexed { index, s ->
+                    Text(text = s, textAlign = TextAlign.Center, modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White)
+                        .clickable {
+                            onSelect(index)
+                        }
+                        .padding(10.dp))
+                }
+            }
+
+        }
+    }
+
 }
