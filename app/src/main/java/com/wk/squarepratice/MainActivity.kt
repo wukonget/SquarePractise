@@ -108,7 +108,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainPage(finish:()->Unit) {
     val dialogVm : DialogViewModel = viewModel()
-    Column() {
+    Column {
         Spacer(
             modifier = Modifier
                 .fillMaxWidth()

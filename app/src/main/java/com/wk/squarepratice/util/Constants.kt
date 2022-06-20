@@ -1,3 +1,3 @@
 package com.wk.squarepratice.util
 
-val TAG = "Square"
+const val TAG = "Square"

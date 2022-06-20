@@ -20,13 +20,11 @@ class SingleLiveEvent<T> : MutableLiveData<T>() {
         }
 
         // Observe the internal MutableLiveData
-        super.observe(owner, object : Observer<T?> {
-            override fun onChanged(t: T?) {
-                if (mPending.compareAndSet(true, false)) {
-                    observer.onChanged(t)
-                }
+        super.observe(owner) { t ->
+            if (mPending.compareAndSet(true, false)) {
+                observer.onChanged(t)
             }
-        })
+        }
     }
 
     @MainThread
@@ -40,15 +38,10 @@ class SingleLiveEvent<T> : MutableLiveData<T>() {
      */
     @MainThread
     fun call() {
-        setValue(null)
+        value = null
     }
 
     companion object {
         private const val TAG = "SingleLiveEvent"
     }
 }
-//
-//作者：GeeJoe
-//链接：https://juejin.cn/post/6955727941850365965
-//来源：稀土掘金
-//著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。

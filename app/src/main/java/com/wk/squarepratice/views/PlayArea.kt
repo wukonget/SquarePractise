@@ -10,14 +10,11 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.wk.squarepratice.BuildConfig
-import com.wk.squarepratice.vm.MainViewModel
 
 
 @Composable
 fun PlayArea() {
-    val vm: MainViewModel = viewModel()
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally

@@ -18,13 +18,13 @@ class WkApplication : Application() {
 
     override fun attachBaseContext(base: Context?) {
         super.attachBaseContext(base)
-        initPgyerSdk(this)
+        initSdks(this)
     }
 
-    private fun initPgyerSdk(wkApplication: WkApplication) {
+    private fun initSdks(wkApplication: WkApplication) {
         PgyerSDKManager.Init().setContext(wkApplication).start()
         PgyerSDKManager.setUncaughtExceptionHandler { thread, throwable ->
-            Log.e(TAG, "${thread.toString()} --- ${throwable.toString()}")
+            Log.e(TAG, "$thread --- $throwable")
         }
     }
 }
